@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe_mod.addImport("zenvars_lib", lib_mod);
+    exe_mod.addImport("zenvars", lib_mod);
 
     const lib = b.addLibrary(.{
         .linkage = .static,

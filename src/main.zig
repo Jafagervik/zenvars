@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const zenvars = @import("zenvars_lib");
+const zenvars = @import("zenvars");
 
 pub const Person = struct {
     name: []const u8 = "none",
@@ -10,15 +10,11 @@ pub const Person = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var arena = std.heap.ArenaAllocator.init(allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    const p = try zenvars.parseFromFile(alloc, "", Person);
-
+    // const p = try zenvars.parse(alloc, Person, .{});
+    const p = try zenvars.parse(alloc, Person, .{ .filepath = "/path/to/envfile.env" });
     std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
 }

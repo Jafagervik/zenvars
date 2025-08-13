@@ -36,14 +36,18 @@ male=true
 pi=3.14
 ```
 
+> [!WARNING]
+> Field names in result struct are case sensitive, so the keys need to directly
+> match the struct field names
+
 Then, to use it, include it in a file like such: 
 
 ```zig 
 const std = @import("std");
 const zenvars = @import("zenvars");
 
-// The env file variables will override these default values
-pub const Person = struct {
+// 
+pub const EnvVars = struct {
     name: []const u8 = "none", 
     age: i32 = 0,
     male: bool = false,
@@ -51,24 +55,26 @@ pub const Person = struct {
 };
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
     // IMPORTANT: An arena allocator is needed for now
-    var arena = std.heap.ArenaAllocator.init(allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    const p = try zenvars.parseFromFile(alloc, "/path/to/your/.env", Person);
+    const envs = try zenvars.parse(alloc, EnvVars, .{.filepath="/path/to/your/.env"});
+    // Or you might want to let the program find it 
+    const envs2 = try zenvars.parse(alloc, EnvVars, .{});
 
     std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
 }
 ```
 
 ## Functions 
-* `parse(std.mem.Allocator, comptime T: type)` - Finds nearest .env file
-* `parseFromFile(std.mem.Allocator, filepath: []const u8, comptime T: type)` 
+
+`parse(std.mem.Allocator, comptime T: type, opts: Options)` 
+
+Options only contain one field `filepath` which is of type `?[]const u8`, meaning 
+that if you set it, you specificaly want to point to your path
+
 
 ## Supported types
 

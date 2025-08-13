@@ -5,23 +5,49 @@ const print = std.debug.print;
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
 
-/// Parses closest .env file into struct `T`
-pub fn parse(allocator: Allocator, comptime T: type) !T {
-    const path = findEnvFile() catch {
-        print("Could not find env file", .{});
+const Options = struct {
+    filepath: ?[]const u8 = null,
+};
+
+pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
+    if (opts.filepath) |filepath| {
+        return try readEnvFile(allocator, filepath, T);
+    }
+
+    // Parses closest .env file into struct `T`
+    const path = findEnvPath(allocator) catch {
+        print("Could not find env file\n", .{});
         return error.EnvFileNotFound;
     };
     return try readEnvFile(allocator, path, T);
 }
 
-/// Parse env file into struct by filename
-pub fn parseFromFile(allocator: Allocator, filename: []const u8, comptime T: type) !T {
-    return readEnvFile(allocator, filename, T);
-}
+// Helper function to find the absolute path to the top-level .env file.
+fn findEnvPath(allocator: Allocator) ![]const u8 {
+    var path_buf: [fs.max_path_bytes]u8 = undefined;
+    const cwd_path = try fs.cwd().realpath(".", &path_buf);
+    var current_path = try allocator.dupe(u8, cwd_path);
 
-/// Find closest env file in your project
-fn findEnvFile() ![]const u8 {
-    return error.EnvFileNotFound;
+    while (true) {
+        const env_path = try std.fs.path.join(allocator, &.{ current_path, ".env" });
+        std.fs.accessAbsolute(env_path, .{}) catch |err| switch (err) {
+            error.FileNotFound => {
+                // Not found here; go up a directory.
+                const parent = std.fs.path.dirname(current_path) orelse {
+                    return error.EnvFileNotFound;
+                };
+                // If parent is the same as current, we're at root (shouldn't happen, but safety check).
+                if (std.mem.eql(u8, parent, current_path)) {
+                    return error.EnvFileNotFound;
+                }
+                current_path = try allocator.dupe(u8, parent);
+                continue;
+            },
+            else => return err,
+        };
+        // Found it; return the absolute path (dupe it to the caller's allocator).
+        return allocator.dupe(u8, env_path);
+    }
 }
 
 fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
@@ -35,11 +61,11 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
     const reader = buf_reader.reader();
 
     var line = std.ArrayList(u8).init(allocator);
-    defer line.deinit(); // TODO: is this the wrong one?
+    defer line.deinit();
 
     const writer = line.writer();
 
-    var t: T = T{};
+    var output_struct: T = T{};
 
     while (reader.streamUntilDelimiter(writer, '\n', null)) {
         defer line.clearRetainingCapacity();
@@ -50,7 +76,7 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
         var iter = std.mem.splitAny(u8, line.items, "=");
 
         const key = iter.next() orelse {
-            print("missing key\n", .{});
+            print("Missing key\n", .{});
             return error.MissingKey;
         };
 
@@ -64,13 +90,13 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
             return error.EnvFileNotFound;
         }
 
-        try setStructFieldByName(T, &t, key, value, allocator);
+        try setStructFieldByName(T, &output_struct, key, value, allocator);
     } else |err| switch (err) {
         error.EndOfStream => {}, // End of file
         else => return err, // Propagate error
     }
 
-    return t;
+    return output_struct;
 }
 
 // Generic function to set a field by name for any struct
@@ -88,7 +114,6 @@ fn setStructFieldByName(
     comptime {
         std.debug.assert(@typeInfo(T) == .@"struct");
     }
-    // if (@typeInfo(T) != .@"struct") return error.NotAStruct;
 
     // Iterate over the struct's fields at compile time
     inline for (std.meta.fields(T)) |field| {
