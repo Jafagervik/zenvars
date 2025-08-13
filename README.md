@@ -66,6 +66,10 @@ pub fn main() !void {
 }
 ```
 
+## Functions 
+* `parse(std.mem.Allocator, comptime T: type)` - Finds nearest .env file
+* `parseFromFile(std.mem.Allocator, filepath: []const u8, comptime T: type)` 
+
 ## Supported types
 
 * Floats (all kinds)

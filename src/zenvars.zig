@@ -5,7 +5,7 @@ const print = std.debug.print;
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
 
-/// Load closest env file into struct
+/// Parses closest .env file into struct `T`
 pub fn parse(allocator: Allocator, comptime T: type) !T {
     const path = findEnvFile() catch {
         print("Could not find env file", .{});
@@ -25,7 +25,10 @@ fn findEnvFile() ![]const u8 {
 }
 
 fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
-    const file = try fs.cwd().openFile(path, .{});
+    const file = fs.cwd().openFile(path, .{}) catch {
+        print("Could not open file with path={s}\n", .{path});
+        return error.FileNotFound;
+    };
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
