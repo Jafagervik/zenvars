@@ -12,6 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Build and Test
+    if: github.event_name == 'push' && github.ref_type != 'tag'
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
