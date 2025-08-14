@@ -1,5 +1,8 @@
 # Zenvars - Parse .env files into Zig structs
 
+[![CI](https://github.com/Jafagervik/zenvars/actions/workflows/ci.yaml/badge.svg)](https://github.com/Jafagervik/zenvars/actions/workflows/ci.yaml)
+![](https://img.shields.io/badge/language-zig-%23ec915c)
+
 ## Install
 
 First to install, run:
