@@ -1,4 +1,4 @@
-//! Root source lib file
+//! Root source file for `.env` file parsing
 const std = @import("std");
 const fs = std.fs;
 const print = std.debug.print;
@@ -6,14 +6,15 @@ const testing = std.testing;
 const Allocator = std.mem.Allocator;
 
 const Options = struct {
+    /// Optional path to `.env` file
     filepath: ?[]const u8 = null,
+    /// Print path found or not
     show_path: bool = false,
 };
 
 pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
-    if (opts.filepath) |filepath| {
+    if (opts.filepath) |filepath|
         return try readEnvFile(allocator, filepath, T);
-    }
 
     // Parses closest .env file into struct `T`
     const path = findEnvPath(allocator, opts.show_path) catch {
@@ -48,7 +49,6 @@ fn findEnvPath(allocator: Allocator, show_path: bool) ![]const u8 {
         };
         // Found it; return the absolute path (dupe it to the caller's allocator).
         const path = allocator.dupe(u8, env_path) catch {
-            print("Could not dupe string\n", .{});
             return error.DupeError;
         };
 
@@ -69,7 +69,6 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
 
     var line = std.ArrayList(u8).init(allocator);
     defer line.deinit();
-
     const writer = line.writer();
 
     var output_struct: T = T{};
@@ -77,30 +76,42 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
     while (reader.streamUntilDelimiter(writer, '\n', null)) {
         defer line.clearRetainingCapacity();
 
-        // Comment at the start is allowed for now
-        if (line.items[0] == '#') continue;
+        // TODO: Support comments midway
+        const skip: bool = blk: for (line.items) |c| {
+            if (std.ascii.isWhitespace(c)) continue;
+            if (c == '#') break :blk true;
+        } else false;
+
+        if (skip) continue;
 
         var iter = std.mem.splitAny(u8, line.items, "=");
 
-        const key = iter.next() orelse {
-            print("Missing key\n", .{});
-            return error.MissingKey;
-        };
+        const key = iter.next() orelse return error.MissingKey;
 
-        const value = iter.next() orelse {
-            print("Missing Value for key={s}\n", .{key});
-            return error.MissingValue;
-        };
+        var buffer: [128]u8 = undefined;
+        if (key.len > buffer.len) return error.KeyTooLong;
 
-        if (iter.next()) |_| {
-            print("Too many items\n", .{});
-            return error.EnvFileNotFound;
+        for (key, 0..) |c, i| buffer[i] = std.ascii.toLower(c);
+
+        const keyLowered: []const u8 = buffer[0..key.len];
+        const keyTrimmed = std.mem.trim(u8, keyLowered, " ");
+
+        // If we have a value after =, use it
+        // TODO: Is this always empty string?
+        if (iter.next()) |val| {
+            // TODO: Trim value too in case of many whitespaces
+            if (std.mem.eql(u8, "", val)) continue;
+
+            if (iter.next()) |_| return error.TooManyEqualSigns;
+
+            const valueTrimmed = std.mem.trim(u8, val, " ");
+
+            try setStructFieldByName(T, &output_struct, keyTrimmed, valueTrimmed, allocator);
         }
-
-        try setStructFieldByName(T, &output_struct, key, value, allocator);
+        // If not, we use the default the struct has already declared
     } else |err| switch (err) {
-        error.EndOfStream => {}, // End of file
-        else => return err, // Propagate error
+        error.EndOfStream => {},
+        else => return err,
     }
 
     return output_struct;
@@ -108,14 +119,10 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
 
 // Generic function to set a field by name for any struct
 fn setStructFieldByName(
-    /// Env var struct type
     comptime T: type,
-    /// Pointer to instance of this new type
     instance: *T,
-    /// Name of struct field to set
     field_name: []const u8,
-    /// Value of struct field to set
-    value: anytype,
+    value: []const u8,
     allocator: Allocator,
 ) !void {
     comptime {
@@ -166,6 +173,30 @@ inline fn parseStringToBool(s: []const u8) ?bool {
     if (std.ascii.eqlIgnoreCase(s, "false") or std.ascii.eqlIgnoreCase(s, "0"))
         return false;
     return null;
+}
+
+test "Parsing" {
+    const EnvArgs = struct {
+        name: []const u8 = "none",
+        age: i32 = 0,
+        male: bool = false,
+        pi: f32 = 3.0,
+        max_lifetime: usize = 50,
+        nick_name: []const u8 = "yoyo",
+    };
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const args = try parse(alloc, EnvArgs, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env.test" });
+
+    try std.testing.expectEqualSlices(u8, "Me", args.name);
+    try std.testing.expectEqual(420, args.age);
+    try std.testing.expectEqual(true, args.male);
+    try std.testing.expectEqual(3.0, args.pi);
+    try std.testing.expectEqual(50, args.max_lifetime);
+    try std.testing.expectEqualSlices(u8, "yoyo", args.nick_name);
 }
 
 test "Test parse string to bool" {

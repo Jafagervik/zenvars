@@ -37,9 +37,9 @@ male=true
 pi=3.14
 ```
 
-> [!WARNING]
-> Field names in result struct are case sensitive for now, 
->so the keys need to directly match the struct field names
+> [!NOTE]
+> The keys are case insensitive, so you could have a key `NICK_NAME` in your env file
+> This will then map to field `nick_name` in your struct
 
 Now, you can simply use it as is shown in the example below:
 
@@ -70,6 +70,9 @@ pub fn main() !void {
     std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
 }
 ```
+
+> [!WARNING]
+> As for now, lines with a `#` in it will be skipped as the whole line is interpreted as a comment
 
 ## Functions and Types
 
