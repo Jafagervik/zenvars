@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Zenvars
-    const lib_mod = b.addModule(.{
+    const lib_mod = b.addModule("zenvars", .{
         .root_source_file = b.path("src/zenvars.zig"),
         .target = target,
         .optimize = optimize,
