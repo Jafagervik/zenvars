@@ -1,11 +1,12 @@
 const std = @import("std");
 const zenvars = @import("zenvars");
 
-pub const Person = struct {
+const EnvArgs = struct {
     name: []const u8 = "none",
     age: i32 = 0,
     male: bool = false,
     pi: f32 = 3.0,
+    max_lifetime: usize = 50,
 };
 
 pub fn main() !void {
@@ -13,6 +14,13 @@ pub fn main() !void {
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    const p = try zenvars.parse(alloc, Person, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env" });
-    std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
+    //const args = try zenvars.parse(alloc, EnvArgs, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env" });
+    const args = try zenvars.parse(alloc, EnvArgs, .{ .show_path = true });
+    std.debug.print("name={s} age={d} male={} pi={d}, max_lifetime={d}\n", .{
+        args.name,
+        args.age,
+        args.male,
+        args.pi,
+        args.max_lifetime,
+    });
 }

@@ -7,6 +7,7 @@ const Allocator = std.mem.Allocator;
 
 const Options = struct {
     filepath: ?[]const u8 = null,
+    show_path: bool = false,
 };
 
 pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
@@ -15,7 +16,7 @@ pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
     }
 
     // Parses closest .env file into struct `T`
-    const path = findEnvPath(allocator) catch {
+    const path = findEnvPath(allocator, opts.show_path) catch {
         print("Could not find env file\n", .{});
         return error.EnvFileNotFound;
     };
@@ -23,7 +24,7 @@ pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
 }
 
 // Helper function to find the absolute path to the top-level .env file.
-fn findEnvPath(allocator: Allocator) ![]const u8 {
+fn findEnvPath(allocator: Allocator, show_path: bool) ![]const u8 {
     var path_buf: [fs.max_path_bytes]u8 = undefined;
     const cwd_path = try fs.cwd().realpath(".", &path_buf);
     var current_path = try allocator.dupe(u8, cwd_path);
@@ -46,7 +47,13 @@ fn findEnvPath(allocator: Allocator) ![]const u8 {
             else => return err,
         };
         // Found it; return the absolute path (dupe it to the caller's allocator).
-        return allocator.dupe(u8, env_path);
+        const path = allocator.dupe(u8, env_path) catch {
+            print("Could not dupe string\n", .{});
+            return error.DupeError;
+        };
+
+        if (show_path) print("Path found at: {s}\n", .{path});
+        return path;
     }
 }
 
