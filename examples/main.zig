@@ -14,7 +14,6 @@ pub fn main() !void {
     defer arena.deinit();
     const alloc = arena.allocator();
 
-    //const args = try zenvars.parse(alloc, EnvArgs, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env" });
     const args = try zenvars.parse(alloc, EnvArgs, .{ .show_path = true });
     std.debug.print("name={s} age={d} male={} pi={d}, max_lifetime={d}\n", .{
         args.name,

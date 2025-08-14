@@ -189,7 +189,7 @@ inline fn parseStringToBool(s: []const u8) ?bool {
 //     defer arena.deinit();
 //     const alloc = arena.allocator();
 //
-//     const args = try parse(alloc, EnvArgs, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env.test" });
+//     const args = try parse(alloc, EnvArgs, .{});
 //
 //     try std.testing.expectEqualSlices(u8, "Me", args.name);
 //     try std.testing.expectEqual(420, args.age);
