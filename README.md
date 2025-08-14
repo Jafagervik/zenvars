@@ -1,4 +1,4 @@
-# Zenvars - Parse .envfiles into structs!
+# Zenvars - Parse .env files into Zig structs
 
 ## Install
 
@@ -6,8 +6,9 @@ First to install, run:
 ```sh 
 zig fetch --save git+https://github.com/Jafagervik/zenvars#v1.0.0
 ```
+Swap out version with any of the newer versions
 
-In your `build.zig` file: add like this:
+Add the zenvars module to your `build.zig` file this:
 
 ```zig 
 const target = b.standardTargetOptions(.{});
@@ -27,7 +28,7 @@ exe_mod.addImport("zenvars", zenvars);
 
 ## Usage
 
-Given you have a .env file somewhere like this
+Given you have a `.env` file somewhere like this
 ```dosini
 # COMMENT will not be parsed
 name=Me
@@ -37,16 +38,16 @@ pi=3.14
 ```
 
 > [!WARNING]
-> Field names in result struct are case sensitive, so the keys need to directly
-> match the struct field names
+> Field names in result struct are case sensitive for now, 
+>so the keys need to directly match the struct field names
 
-Then, to use it, include it in a file like such: 
+Now, you can simply use it as is shown in the example below:
 
 ```zig 
 const std = @import("std");
 const zenvars = @import("zenvars");
 
-// 
+// Default values are necessary as of now
 pub const EnvVars = struct {
     name: []const u8 = "none", 
     age: i32 = 0,
@@ -62,18 +63,31 @@ pub fn main() !void {
 
     const envs = try zenvars.parse(alloc, EnvVars, .{.filepath="/path/to/your/.env"});
     // Or you might want to let the program find it 
-    const envs2 = try zenvars.parse(alloc, EnvVars, .{});
+    _ = try zenvars.parse(alloc, EnvVars, .{});
+    // You can even show the path if you'd like
+    _ = try zenvars.parse(alloc, EnvVars, .{ .show_path = true });
 
     std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
 }
 ```
 
-## Functions 
+## Functions and Types
 
 `parse(std.mem.Allocator, comptime T: type, opts: Options)` 
 
-Options only contain one field `filepath` which is of type `?[]const u8`, meaning 
-that if you set it, you specificaly want to point to your path
+```zig
+const Options = struct {
+    filepath: ?[]const u8 = null,
+    show_path: bool = false,
+};
+```
+
+- `filepath`: If set, this will try to open the file at that specific location, otherwise
+the closest top-level `.env` file will be used
+- `show_path`: If true, the full path to the `.env` file will be printed
+
+> [!NOTE]
+> `show_path` is best used when `filepath` is not set
 
 
 ## Supported types
