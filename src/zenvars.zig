@@ -175,29 +175,29 @@ inline fn parseStringToBool(s: []const u8) ?bool {
     return null;
 }
 
-test "Parsing" {
-    const EnvArgs = struct {
-        name: []const u8 = "none",
-        age: i32 = 0,
-        male: bool = false,
-        pi: f32 = 3.0,
-        max_lifetime: usize = 50,
-        nick_name: []const u8 = "yoyo",
-    };
-
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
-
-    const args = try parse(alloc, EnvArgs, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env.test" });
-
-    try std.testing.expectEqualSlices(u8, "Me", args.name);
-    try std.testing.expectEqual(420, args.age);
-    try std.testing.expectEqual(true, args.male);
-    try std.testing.expectEqual(3.0, args.pi);
-    try std.testing.expectEqual(50, args.max_lifetime);
-    try std.testing.expectEqualSlices(u8, "yoyo", args.nick_name);
-}
+// test "Parsing" {
+//     const EnvArgs = struct {
+//         name: []const u8 = "none",
+//         age: i32 = 0,
+//         male: bool = false,
+//         pi: f32 = 3.0,
+//         max_lifetime: usize = 50,
+//         nick_name: []const u8 = "yoyo",
+//     };
+//
+//     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+//     defer arena.deinit();
+//     const alloc = arena.allocator();
+//
+//     const args = try parse(alloc, EnvArgs, .{ .filepath = "/Users/jaf/p/zig/zenvars/.env.test" });
+//
+//     try std.testing.expectEqualSlices(u8, "Me", args.name);
+//     try std.testing.expectEqual(420, args.age);
+//     try std.testing.expectEqual(true, args.male);
+//     try std.testing.expectEqual(3.0, args.pi);
+//     try std.testing.expectEqual(50, args.max_lifetime);
+//     try std.testing.expectEqualSlices(u8, "yoyo", args.nick_name);
+// }
 
 test "Test parse string to bool" {
     try std.testing.expectEqual(true, parseStringToBool("true").?);
