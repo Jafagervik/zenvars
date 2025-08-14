@@ -11,13 +11,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const lib = b.addLibrary(.{
-        .linkage = .static,
-        .name = "zenvars",
+    b.installArtifact(b.addStaticLibrary(.{
+        .name = "zstb",
         .root_module = lib_mod,
-    });
-
-    b.installArtifact(lib);
+    }));
 
     // Examples
     const exe_mod = b.createModule(.{

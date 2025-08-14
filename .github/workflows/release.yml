@@ -20,7 +20,7 @@ jobs:
         with:
           version: 0.14.0
       - name: Build
-        run: zig build install --release=safe # TODO: Change?
+        run: zig build install
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
