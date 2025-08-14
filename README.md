@@ -33,13 +33,17 @@ Given you have a `.env` file somewhere like this
 # COMMENT will not be parsed
 name=Me
 age=420
-male=true
+male=
 pi=3.14
 ```
 
 > [!NOTE]
+> Keys can have empty values. in that case, the default value of the struct will be used
+
+> [!NOTE]
 > The keys are case insensitive, so you could have a key `NICK_NAME` in your env file
 > This will then map to field `nick_name` in your struct
+
 
 Now, you can simply use it as is shown in the example below:
 
@@ -47,7 +51,7 @@ Now, you can simply use it as is shown in the example below:
 const std = @import("std");
 const zenvars = @import("zenvars");
 
-// Default values are necessary as of now
+// Default values are necessary
 pub const EnvVars = struct {
     name: []const u8 = "none", 
     age: i32 = 0,
