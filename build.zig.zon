@@ -1,6 +1,6 @@
 .{
     .name = .zenvars,
-    .version = "0.0.3",
+    .version = "0.0.4",
     .fingerprint = 0x780b627b7fc44c3e,
     .minimum_zig_version = "0.14.0",
 
