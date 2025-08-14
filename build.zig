@@ -12,7 +12,7 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(b.addStaticLibrary(.{
-        .name = "zstb",
+        .name = "zenvars",
         .root_module = lib_mod,
     }));
 
