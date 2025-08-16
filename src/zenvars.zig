@@ -144,6 +144,11 @@ fn setStructFieldByName(
                     @field(instance, field.name) = try allocator.dupe(u8, value);
                     return;
                 },
+                .@"enum" => {
+                    const val = std.meta.stringToEnum(field.type, value) orelse return error.InvalidEnumValue;
+                    @field(instance, field.name) = val;
+                    return;
+                },
                 .int => {
                     @field(instance, field.name) = try std.fmt.parseInt(field.type, value, 10);
                     return;

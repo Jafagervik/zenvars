@@ -106,3 +106,4 @@ the closest top-level `.env` file will be used
 * Integers (all kinds)
 * Strings ([]const u8 for now)
 * Bools
+* Enums
