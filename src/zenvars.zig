@@ -129,45 +129,33 @@ fn setStructFieldByName(
         std.debug.assert(@typeInfo(T) == .@"struct");
     }
 
-    // Iterate over the struct's fields at compile time
     inline for (std.meta.fields(T)) |field| {
         if (std.mem.eql(u8, field.name, field_name)) {
-            switch (@typeInfo(field.type)) {
+            return switch (@typeInfo(field.type)) {
                 .pointer => |ptr| {
                     if (ptr.child != u8 or !ptr.is_const or ptr.size != .slice) {
                         return error.UnsupportedType;
                     }
-                    // Ensure value is a string and allocator is provided
-                    if (@TypeOf(value) != []const u8) return error.TypeMismatch;
-
-                    // Duplicate the string to ensure proper memory management
                     @field(instance, field.name) = try allocator.dupe(u8, value);
-                    return;
                 },
                 .@"enum" => {
                     const val = std.meta.stringToEnum(field.type, value) orelse return error.InvalidEnumValue;
                     @field(instance, field.name) = val;
-                    return;
                 },
-                .int => {
-                    @field(instance, field.name) = try std.fmt.parseInt(field.type, value, 10);
-                    return;
-                },
-                .float => {
-                    @field(instance, field.name) = try std.fmt.parseFloat(field.type, value);
-                    return;
-                },
+                .int => @field(instance, field.name) = try std.fmt.parseInt(field.type, value, 10),
+                .float => @field(instance, field.name) = try std.fmt.parseFloat(field.type, value),
                 .bool => {
                     if (parseStringToBool(value)) |b| {
                         @field(instance, field.name) = b;
-                        return;
+                    } else {
+                        return error.TypeMismatch;
                     }
-                    return error.TypeMismatch;
                 },
                 else => return error.UnsupportedType,
-            }
+            };
         }
     }
+
     print("No element found for key={s}\n", .{field_name});
     return error.FieldNotFound;
 }
