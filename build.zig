@@ -11,11 +11,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // b.installArtifact(b.addStaticLibrary(.{
-    //     .name = "zenvars",
-    //     .root_module = lib_mod,
-    // }));
-
     // Examples
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("examples/main.zig"),
@@ -42,10 +37,7 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     // Tests
-
-    const lib_unit_tests = b.addTest(.{
-        .root_module = lib_mod,
-    });
+    const lib_unit_tests = b.addTest(.{ .root_module = lib_mod });
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 

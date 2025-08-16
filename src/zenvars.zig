@@ -2,8 +2,10 @@
 const std = @import("std");
 const fs = std.fs;
 const print = std.debug.print;
-const testing = std.testing;
+const eqlIgnoreCase = std.ascii.eqlIgnoreCase;
 const Allocator = std.mem.Allocator;
+
+const MAX_BUF_SIZE: usize = 128;
 
 const Options = struct {
     /// Optional path to `.env` file
@@ -12,15 +14,17 @@ const Options = struct {
     show_path: bool = false,
 };
 
+/// Parses a .env(.(a-zA-Z))* file and sets values in struct `T`
+/// based on the values in the file
 pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
     if (opts.filepath) |filepath|
         return try readEnvFile(allocator, filepath, T);
 
-    // Parses closest .env file into struct `T`
     const path = findEnvPath(allocator, opts.show_path) catch {
         print("Could not find env file\n", .{});
         return error.EnvFileNotFound;
     };
+
     return try readEnvFile(allocator, path, T);
 }
 
@@ -88,7 +92,7 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
 
         const key = iter.next() orelse return error.MissingKey;
 
-        var buffer: [128]u8 = undefined;
+        var buffer: [MAX_BUF_SIZE]u8 = undefined;
         if (key.len > buffer.len) return error.KeyTooLong;
 
         for (key, 0..) |c, i| buffer[i] = std.ascii.toLower(c);
@@ -99,12 +103,10 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
         // If we have a value after =, use it
         // TODO: Is this always empty string?
         if (iter.next()) |val| {
-            // TODO: Trim value too in case of many whitespaces
-            if (std.mem.eql(u8, "", val)) continue;
-
-            if (iter.next()) |_| return error.TooManyEqualSigns;
-
             const valueTrimmed = std.mem.trim(u8, val, " ");
+
+            if (std.mem.eql(u8, "", valueTrimmed)) continue;
+            if (iter.next()) |_| return error.TooManyEqualSigns;
 
             try setStructFieldByName(T, &output_struct, keyTrimmed, valueTrimmed, allocator);
         }
@@ -125,9 +127,7 @@ fn setStructFieldByName(
     value: []const u8,
     allocator: Allocator,
 ) !void {
-    comptime {
-        std.debug.assert(@typeInfo(T) == .@"struct");
-    }
+    comptime std.debug.assert(@typeInfo(T) == .@"struct");
 
     inline for (std.meta.fields(T)) |field| {
         if (std.mem.eql(u8, field.name, field_name)) {
@@ -161,13 +161,14 @@ fn setStructFieldByName(
 }
 
 inline fn parseStringToBool(s: []const u8) ?bool {
-    if (std.ascii.eqlIgnoreCase(s, "true") or std.ascii.eqlIgnoreCase(s, "1"))
+    if (eqlIgnoreCase(s, "true") or eqlIgnoreCase(s, "1"))
         return true;
-    if (std.ascii.eqlIgnoreCase(s, "false") or std.ascii.eqlIgnoreCase(s, "0"))
+    if (eqlIgnoreCase(s, "false") or eqlIgnoreCase(s, "0"))
         return false;
     return null;
 }
 
+const testing = std.testing;
 // test "Parsing" {
 //     const EnvArgs = struct {
 //         name: []const u8 = "none",
