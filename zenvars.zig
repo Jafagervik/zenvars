@@ -79,13 +79,11 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
 
         if (items.len == 0 or items[0] == '#') continue; // Skip empty lines or full-line comment
 
-        var end_idx: usize = items.len;
-        for (items, 0..) |c, i| {
-            if (c == '#') {
-                end_idx = i;
-                break;
-            }
-        }
+        const end_idx: usize = blk: {
+            for (items, 0..) |c, i| {
+                if (c == '#') break :blk i;
+            } else break :blk items.len;
+        };
 
         items = items[0..end_idx];
         if (items.len == 0) continue;
