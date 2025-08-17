@@ -76,8 +76,7 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
         defer line.clearRetainingCapacity();
 
         var items: []const u8 = std.mem.trim(u8, line.items, " \t\r");
-
-        if (items.len == 0 or items[0] == '#') continue; // Skip empty lines or full-line comment
+        if (items.len == 0 or items[0] == '#') continue;
 
         const end_idx: usize = blk: {
             for (items, 0..) |c, i| {
@@ -97,19 +96,12 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
         for (key, 0..) |c, i| buffer[i] = std.ascii.toLower(c);
 
         const keyLowered: []const u8 = buffer[0..key.len];
-        const keyTrimmed = std.mem.trim(u8, keyLowered, " ");
+        const val = iter.next() orelse return error.MissingValue;
 
-        // If we have a value after =, use it
-        // TODO: Is this always empty string?
-        if (iter.next()) |val| {
-            const valueTrimmed = std.mem.trim(u8, val, " ");
+        if (std.mem.eql(u8, "", val)) continue;
+        if (iter.next()) |_| return error.TooManyEqualSigns;
 
-            if (std.mem.eql(u8, "", valueTrimmed)) continue;
-            if (iter.next()) |_| return error.TooManyEqualSigns;
-
-            try setStructFieldByName(T, &output_struct, keyTrimmed, valueTrimmed, allocator);
-        }
-        // If not, we use the default the struct has already declared
+        try setStructFieldByName(T, &output_struct, keyLowered, val, allocator);
     } else |err| switch (err) {
         error.EndOfStream => {},
         else => return err,
