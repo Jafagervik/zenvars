@@ -1,6 +1,6 @@
 .{
     .name = .zenvars,
-    .version = "0.3.0", // Current is 0.2.0
+    .version = "0.3.1", // Current is 0.3.0
     .fingerprint = 0x780b627b7fc44c3e,
     .minimum_zig_version = "0.14.0",
     .dependencies = .{},
