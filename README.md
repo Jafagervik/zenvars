@@ -35,13 +35,14 @@ Given you have a `.env` file somewhere like this
 ```dosini
 # COMMENT will not be parsed
 name=Me
-age=420
+age=42#0 
 male=
 pi=3.14
 ```
 
 > [!NOTE]
 > Keys can have empty values. in that case, the default value of the struct will be used
+> Comments starts with #, so everything to the rightside will be ignored
 
 > [!NOTE]
 > The keys are case insensitive, so you could have a key `NICK_NAME` in your env file
@@ -77,9 +78,6 @@ pub fn main() !void {
     std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
 }
 ```
-
-> [!WARNING]
-> As for now, lines with a `#` in it will be skipped as the whole line is interpreted as a comment
 
 ## Functions and Types
 

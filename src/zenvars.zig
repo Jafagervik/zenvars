@@ -1,8 +1,9 @@
-//! Root source file for `.env` file parsing
+//! Zenvars root module
 const std = @import("std");
 const fs = std.fs;
 const print = std.debug.print;
 const eqlIgnoreCase = std.ascii.eqlIgnoreCase;
+const isWhitespace = std.ascii.isWhitespace;
 const Allocator = std.mem.Allocator;
 
 const MAX_BUF_SIZE: usize = 128;
@@ -17,8 +18,7 @@ const Options = struct {
 /// Parses a .env(.(a-zA-Z))* file and sets values in struct `T`
 /// based on the values in the file
 pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
-    if (opts.filepath) |filepath|
-        return try readEnvFile(allocator, filepath, T);
+    if (opts.filepath) |filepath| return try readEnvFile(allocator, filepath, T);
 
     const path = findEnvPath(allocator, opts.show_path) catch {
         print("Could not find env file\n", .{});
@@ -39,22 +39,17 @@ fn findEnvPath(allocator: Allocator, show_path: bool) ![]const u8 {
         std.fs.accessAbsolute(env_path, .{}) catch |err| switch (err) {
             error.FileNotFound => {
                 // Not found here; go up a directory.
-                const parent = std.fs.path.dirname(current_path) orelse {
-                    return error.EnvFileNotFound;
-                };
+                const parent = std.fs.path.dirname(current_path) orelse return error.EnvFileNotFound;
                 // If parent is the same as current, we're at root (shouldn't happen, but safety check).
-                if (std.mem.eql(u8, parent, current_path)) {
-                    return error.EnvFileNotFound;
-                }
+                if (std.mem.eql(u8, parent, current_path)) return error.EnvFileNotFound;
+
                 current_path = try allocator.dupe(u8, parent);
                 continue;
             },
             else => return err,
         };
         // Found it; return the absolute path (dupe it to the caller's allocator).
-        const path = allocator.dupe(u8, env_path) catch {
-            return error.DupeError;
-        };
+        const path = allocator.dupe(u8, env_path) catch return error.DupeError;
 
         if (show_path) print("Path found at: {s}\n", .{path});
         return path;
@@ -80,16 +75,22 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
     while (reader.streamUntilDelimiter(writer, '\n', null)) {
         defer line.clearRetainingCapacity();
 
-        // TODO: Support comments midway
-        const skip: bool = blk: for (line.items) |c| {
-            if (std.ascii.isWhitespace(c)) continue;
-            if (c == '#') break :blk true;
-        } else false;
+        var items: []const u8 = std.mem.trim(u8, line.items, " \t\r");
 
-        if (skip) continue;
+        if (items.len == 0 or items[0] == '#') continue; // Skip empty lines or full-line comment
 
-        var iter = std.mem.splitAny(u8, line.items, "=");
+        var end_idx: usize = items.len;
+        for (items, 0..) |c, i| {
+            if (c == '#') {
+                end_idx = i;
+                break;
+            }
+        }
 
+        items = items[0..end_idx];
+        if (items.len == 0) continue;
+
+        var iter = std.mem.splitAny(u8, items, "=");
         const key = iter.next() orelse return error.MissingKey;
 
         var buffer: [MAX_BUF_SIZE]u8 = undefined;
@@ -133,9 +134,8 @@ fn setStructFieldByName(
         if (std.mem.eql(u8, field.name, field_name)) {
             return switch (@typeInfo(field.type)) {
                 .pointer => |ptr| {
-                    if (ptr.child != u8 or !ptr.is_const or ptr.size != .slice) {
+                    if (ptr.child != u8 or !ptr.is_const or ptr.size != .slice)
                         return error.UnsupportedType;
-                    }
                     @field(instance, field.name) = try allocator.dupe(u8, value);
                 },
                 .@"enum" => {
@@ -147,9 +147,7 @@ fn setStructFieldByName(
                 .bool => {
                     if (parseStringToBool(value)) |b| {
                         @field(instance, field.name) = b;
-                    } else {
-                        return error.TypeMismatch;
-                    }
+                    } else return error.TypeMismatch;
                 },
                 else => return error.UnsupportedType,
             };
