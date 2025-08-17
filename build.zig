@@ -6,14 +6,14 @@ pub fn build(b: *std.Build) void {
 
     // Zenvars
     const lib_mod = b.addModule("zenvars", .{
-        .root_source_file = b.path("src/zenvars.zig"),
+        .root_source_file = b.path("zenvars.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     // Examples
     const exe_mod = b.createModule(.{
-        .root_source_file = b.path("examples/main.zig"),
+        .root_source_file = b.path("example.zig"),
         .target = target,
         .optimize = optimize,
     });
