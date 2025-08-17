@@ -2,6 +2,7 @@
 
 ![CI](https://github.com/Jafagervik/zenvars/actions/workflows/ci.yml/badge.svg)
 ![](https://img.shields.io/badge/language-zig-%23ec915c)
+[![License: Zlib](https://img.shields.io/badge/License-Zlib-lightgrey.svg)](https://opensource.org/licenses/Zlib)
 
 ## Install
 
