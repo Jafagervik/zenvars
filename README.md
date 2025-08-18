@@ -1,5 +1,7 @@
 # Zenvars - Parse .env files into Zig structs
 
+A zero-dependency module for parsing .env files into zig structs in under 150 lines of Zig
+
 ![CI](https://github.com/Jafagervik/zenvars/actions/workflows/ci.yml/badge.svg)
 ![](https://img.shields.io/badge/language-zig-%23ec915c)
 [![License: Zlib](https://img.shields.io/badge/License-Zlib-lightgrey.svg)](https://opensource.org/licenses/Zlib)
@@ -43,12 +45,13 @@ pi=3.14
 
 > [!NOTE]
 > Keys can have empty values. in that case, the default value of the struct will be used
+
+> [!NOTE]
 > Comments starts with #, so everything to the rightside will be ignored
 
 > [!NOTE]
 > The keys are case insensitive, so you could have a key `NICK_NAME` in your env file
 > This will then map to field `nick_name` in your struct
-
 
 Now, you can simply use it as is shown in the example below:
 
@@ -82,18 +85,16 @@ pub fn main() !void {
 
 ## Functions and Types
 
-`parse(std.mem.Allocator, comptime T: type, opts: Options)` 
+`parse(allocator: std.mem.Allocator, comptime T: type, opts: Options)` 
 
 ```zig
 const Options = struct {
+    /// If set, this will try to open the file at that specific location, otherwise
     filepath: ?[]const u8 = null,
+    /// If true, the full path to the `.env` file will be printed
     show_path: bool = false,
 };
 ```
-
-- `filepath`: If set, this will try to open the file at that specific location, otherwise
-the closest top-level `.env` file will be used
-- `show_path`: If true, the full path to the `.env` file will be printed
 
 > [!NOTE]
 > `show_path` is best used when `filepath` is not set
