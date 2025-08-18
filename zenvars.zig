@@ -126,7 +126,7 @@ fn setStructFieldByName(
             const is_optional = @typeInfo(field.type) == .optional;
             const target_type = if (is_optional) @typeInfo(field.type).optional.child else field.type;
 
-            if (is_optional and (value.len == 0 or eqlIgnoreCase(value, "null"))) {
+            if (is_optional and eqlIgnoreCase(value, "null")) {
                 @field(instance, field.name) = null;
                 return;
             }
@@ -187,13 +187,12 @@ test "Set struct Field by Name" {
     try setStructFieldByName(EnvArgs, &args, "name", "Me", alloc);
     try setStructFieldByName(EnvArgs, &args, "male", "false", alloc);
     try setStructFieldByName(EnvArgs, &args, "age", "420", alloc);
-    try setStructFieldByName(EnvArgs, &args, "max_lifetime", "", alloc); // should be null
 
     try std.testing.expectEqualSlices(u8, "Me", args.name);
     try std.testing.expectEqual(420, args.age);
     try std.testing.expectEqual(false, args.male);
     try std.testing.expectEqual(3.0, args.pi);
-    try std.testing.expectEqual(null, args.max_lifetime);
+    try std.testing.expectEqual(50, args.max_lifetime.?);
     try std.testing.expectEqualSlices(u8, "yoyo", args.nick_name);
 }
 
