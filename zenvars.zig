@@ -18,12 +18,13 @@ const Options = struct {
 /// Parses a .env(.(a-zA-Z))* file and sets values in struct `T`
 /// based on the values in the file
 pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
-    if (opts.filepath) |filepath| return try readEnvFile(allocator, filepath, T);
-
-    const path = findEnvPath(allocator, opts.show_path) catch {
-        print("Could not find env file\n", .{});
-        return error.EnvFileNotFound;
-    };
+    const path = if (opts.filepath) |filepath|
+        filepath
+    else
+        findEnvPath(allocator, opts.show_path) catch {
+            print("Could not find env file\n", .{});
+            return error.EnvFileNotFound;
+        };
 
     return try readEnvFile(allocator, path, T);
 }
