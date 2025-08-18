@@ -10,7 +10,7 @@ A zero-dependency module for parsing .env files into zig structs in under 150 li
 
 First to install, run:
 ```sh 
-zig fetch --save git+https://github.com/Jafagervik/zenvars#v1.0.0
+zig fetch --save git+https://github.com/Jafagervik/zenvars#v1.1.0
 ```
 Swap out version with any of the newer versions
 
@@ -62,9 +62,10 @@ const zenvars = @import("zenvars");
 // Default values are necessary
 pub const EnvVars = struct {
     name: []const u8 = "none", 
-    age: i32 = 0,
+    age: ?i32 = null,
     male: bool = false,
     pi: f32 = 3.0,
+    tell_me: bool = false,
 };
 
 pub fn main() !void {
@@ -79,7 +80,7 @@ pub fn main() !void {
     // You can even show the path if you'd like
     _ = try zenvars.parse(alloc, EnvVars, .{ .show_path = true });
 
-    std.debug.print("name={s} age={d} male={} pi={d}\n", .{ p.name, p.age, p.male, p.pi });
+    std.debug.print("name={s} age={d} male={} pi={d} tell_me={}\n", .{ p.name, p.age, p.male, p.pi, p.tell_me });
 }
 ```
 
@@ -107,3 +108,4 @@ const Options = struct {
 * Strings ([]const u8 for now)
 * Bools
 * Enums
+* Optional values
