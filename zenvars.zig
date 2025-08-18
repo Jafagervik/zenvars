@@ -18,9 +18,8 @@ const Options = struct {
 /// Parses a .env(.(a-zA-Z))* file and sets values in struct `T`
 /// based on the values in the file
 pub fn parse(allocator: Allocator, comptime T: type, opts: Options) !T {
-    if (opts.filepath) |filepath| return try readEnvFile(allocator, filepath, T);
-
-    const path = findEnvPath(allocator, opts.show_path) catch {
+    const path = opts.filepath orelse
+        findEnvPath(allocator, opts.show_path) catch {
         print("Could not find env file\n", .{});
         return error.EnvFileNotFound;
     };
@@ -35,11 +34,11 @@ fn findEnvPath(allocator: Allocator, show_path: bool) ![]const u8 {
     var current_path = try allocator.dupe(u8, cwd_path);
 
     while (true) {
-        const env_path = try std.fs.path.join(allocator, &.{ current_path, ".env" });
-        std.fs.accessAbsolute(env_path, .{}) catch |err| switch (err) {
+        const env_path = try fs.path.join(allocator, &.{ current_path, ".env" });
+        fs.accessAbsolute(env_path, .{}) catch |err| switch (err) {
             error.FileNotFound => {
                 // Not found here; go up a directory.
-                const parent = std.fs.path.dirname(current_path) orelse return error.EnvFileNotFound;
+                const parent = fs.path.dirname(current_path) orelse return error.EnvFileNotFound;
                 // If parent is the same as current, we're at root (shouldn't happen, but safety check).
                 if (std.mem.eql(u8, parent, current_path)) return error.EnvFileNotFound;
 
@@ -98,7 +97,7 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
         const keyLowered: []const u8 = buffer[0..key.len];
         const val = iter.next() orelse return error.MissingValue;
 
-        if (std.mem.eql(u8, "", val)) continue;
+        if (val.len == 0) continue;
         if (iter.next()) |_| return error.TooManyEqualSigns;
 
         try setStructFieldByName(T, &output_struct, keyLowered, val, allocator);
@@ -122,18 +121,26 @@ fn setStructFieldByName(
 
     inline for (std.meta.fields(T)) |field| {
         if (std.mem.eql(u8, field.name, field_name)) {
-            return switch (@typeInfo(field.type)) {
+            const is_optional = @typeInfo(field.type) == .optional;
+            const target_type = if (is_optional) @typeInfo(field.type).optional.child else field.type;
+
+            if (is_optional and (value.len == 0 or eqlIgnoreCase(value, "null"))) {
+                @field(instance, field.name) = null;
+                return;
+            }
+
+            return switch (@typeInfo(target_type)) {
                 .pointer => |ptr| {
                     if (ptr.child != u8 or !ptr.is_const or ptr.size != .slice)
                         return error.UnsupportedType;
                     @field(instance, field.name) = try allocator.dupe(u8, value);
                 },
                 .@"enum" => {
-                    const val = std.meta.stringToEnum(field.type, value) orelse return error.InvalidEnumValue;
+                    const val = std.meta.stringToEnum(target_type, value) orelse return error.InvalidEnumValue;
                     @field(instance, field.name) = val;
                 },
-                .int => @field(instance, field.name) = try std.fmt.parseInt(field.type, value, 10),
-                .float => @field(instance, field.name) = try std.fmt.parseFloat(field.type, value),
+                .int => @field(instance, field.name) = try std.fmt.parseInt(target_type, value, 10),
+                .float => @field(instance, field.name) = try std.fmt.parseFloat(target_type, value),
                 .bool => {
                     if (parseStringToBool(value)) |b| {
                         @field(instance, field.name) = b;
@@ -157,29 +164,36 @@ inline fn parseStringToBool(s: []const u8) ?bool {
 }
 
 const testing = std.testing;
-// test "Parsing" {
-//     const EnvArgs = struct {
-//         name: []const u8 = "none",
-//         age: i32 = 0,
-//         male: bool = false,
-//         pi: f32 = 3.0,
-//         max_lifetime: usize = 50,
-//         nick_name: []const u8 = "yoyo",
-//     };
-//
-//     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-//     defer arena.deinit();
-//     const alloc = arena.allocator();
-//
-//     const args = try parse(alloc, EnvArgs, .{});
-//
-//     try std.testing.expectEqualSlices(u8, "Me", args.name);
-//     try std.testing.expectEqual(420, args.age);
-//     try std.testing.expectEqual(true, args.male);
-//     try std.testing.expectEqual(3.0, args.pi);
-//     try std.testing.expectEqual(50, args.max_lifetime);
-//     try std.testing.expectEqualSlices(u8, "yoyo", args.nick_name);
-// }
+
+test "Find closest .env file and return path" {}
+
+test "Set struct Field by Name" {
+    const EnvArgs = struct {
+        name: []const u8 = "none",
+        age: i32 = 0,
+        male: bool = false,
+        pi: f32 = 3.0,
+        max_lifetime: ?usize = 50,
+        nick_name: []const u8 = "yoyo",
+    };
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    var args = EnvArgs{};
+    try setStructFieldByName(EnvArgs, &args, "name", "Me", alloc);
+    try setStructFieldByName(EnvArgs, &args, "male", "false", alloc);
+    try setStructFieldByName(EnvArgs, &args, "age", "420", alloc);
+    try setStructFieldByName(EnvArgs, &args, "max_lifetime", "", alloc); // should be null
+
+    try std.testing.expectEqualSlices(u8, "Me", args.name);
+    try std.testing.expectEqual(420, args.age);
+    try std.testing.expectEqual(false, args.male);
+    try std.testing.expectEqual(3.0, args.pi);
+    try std.testing.expectEqual(null, args.max_lifetime);
+    try std.testing.expectEqualSlices(u8, "yoyo", args.nick_name);
+}
 
 test "Test parse string to bool" {
     try std.testing.expectEqual(true, parseStringToBool("true").?);

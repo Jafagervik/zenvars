@@ -5,7 +5,7 @@ const Color = enum { red, green, blue };
 
 const EnvArgs = struct {
     name: []const u8 = "none",
-    age: i32 = 0,
+    age: ?i32 = null,
     male: bool = false,
     pi: f32 = 3.0,
     max_lifetime: usize = 50,
@@ -18,7 +18,7 @@ pub fn main() !void {
     const alloc = arena.allocator();
 
     const args = try zenvars.parse(alloc, EnvArgs, .{ .show_path = true });
-    std.debug.print("name={s} age={d} male={} pi={d}, max_lifetime={d}, color={s}\n", .{
+    std.debug.print("name={s} age={?d} male={} pi={d}, max_lifetime={d}, color={s}\n", .{
         args.name,
         args.age,
         args.male,
