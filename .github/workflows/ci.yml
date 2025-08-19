@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    if: github.event_name == 'push' && github.ref_type != 'tag'
+    if: github.ref_type != 'tag'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -33,7 +33,7 @@ jobs:
         run: zig build test --summary all
 
   format-check:
-    if: github.event_name == 'push' && github.ref_type != 'tag'
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
 
     steps:
@@ -49,7 +49,7 @@ jobs:
         run: if [ -f zenvars.zig ]; then zig fmt --check zenvars.zig; else echo "No zenvars.zig"; fi
 
   lint:
-    if: github.event_name == 'push' && github.ref_type != 'tag'
+    if: github.ref_type != 'tag'
     runs-on: ubuntu-latest
 
     steps:
