@@ -1,8 +1,26 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
+const zig_version: std.SemanticVersion = .{ .major = 0, .minor = 14, .patch = 0 };
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    if (zig_version.major != builtin.zig_version.major or zig_version.minor != builtin.zig_version.minor or zig_version.patch != builtin.zig_version.patch) {
+        std.debug.print(
+            "Your zig version ({d}.{d}.{d}) is not compatible with the one used in zenvars: {d}.{d}.{d}\n",
+            .{
+                builtin.zig_version.major,
+                builtin.zig_version.minor,
+                builtin.zig_version.patch,
+                zig_version.major,
+                zig_version.minor,
+                zig_version.patch,
+            },
+        );
+        @panic("Zig version mismatch");
+    }
 
     // Zenvars
     const lib_mod = b.addModule("zenvars", .{

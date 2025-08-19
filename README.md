@@ -6,6 +6,13 @@ A zero-dependency module for parsing .env files into zig structs in under 150 li
 ![](https://img.shields.io/badge/language-zig-%23ec915c)
 [![License: Zlib](https://img.shields.io/badge/License-Zlib-lightgrey.svg)](https://opensource.org/licenses/Zlib)
 
+## Zig Compatibility
+
+| Zenvars Version | Supported Zig Version |
+|-----------------|------------------------|
+| ≤ 1.1           | 0.14.x                 |
+| ≥ 1.2           | 0.15.x                 |
+
 ## Install
 
 First to install, run:
