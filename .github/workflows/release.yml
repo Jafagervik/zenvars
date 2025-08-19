@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: write
@@ -22,7 +22,7 @@ jobs:
       - name: Build and Test
         run: |
           zig build
-          zig build test
+          zig build test --summary all
 
   release:
     needs: build
@@ -35,5 +35,6 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Zenvars ${{ github.ref_name }}
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
