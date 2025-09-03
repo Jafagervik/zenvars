@@ -26,7 +26,7 @@ jobs:
       - name: Setup zig
         uses: mlugg/setup-zig@v2
         with:
-          version: 0.15.1
+          version: ${{ matrix.zig-version }}
 
       - name: Run tests
         run: zig build test --summary all
@@ -42,7 +42,7 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: ${{ matrix.zig-version }}
+          version: 0.15.1
 
       - name: Check formatting
         run: if [ -f zenvars.zig ]; then zig fmt --check zenvars.zig; else echo "No zenvars.zig"; fi
