@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const zig_version: std.SemanticVersion = .{ .major = 0, .minor = 14, .patch = 0 };
+const zig_version: std.SemanticVersion = .{ .major = 0, .minor = 15, .patch = 1 };
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
                 zig_version.patch,
             },
         );
-        @panic("Zig version mismatch");
+        std.process.exit(1);
     }
 
     // Zenvars

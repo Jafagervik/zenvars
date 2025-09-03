@@ -64,19 +64,13 @@ fn readEnvFile(allocator: Allocator, path: []const u8, comptime T: type) !T {
     };
     defer file.close();
 
-    var buf_reader = std.io.bufferedReader(file.reader());
-    const reader = buf_reader.reader();
-
-    var line = std.ArrayList(u8).init(allocator);
-    defer line.deinit();
-    const writer = line.writer();
+    var buf: [MAX_BUF_SIZE]u8 = undefined;
+    var reader = file.reader(&buf);
 
     var output_struct: T = T{};
 
-    while (reader.streamUntilDelimiter(writer, '\n', null)) {
-        defer line.clearRetainingCapacity();
-
-        var items: []const u8 = std.mem.trim(u8, line.items, " \t\r");
+    while (reader.interface.takeDelimiterExclusive('\n')) |line| {
+        var items: []const u8 = std.mem.trim(u8, line, " \t\r");
         if (items.len == 0 or items[0] == '#') continue;
 
         const end_idx: usize = blk: {
