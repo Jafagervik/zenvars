@@ -58,7 +58,7 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: ${{ matrix.zig-version }}
+          version: 0.15.1
 
       - name: Zig check
         run: zig build --summary all
