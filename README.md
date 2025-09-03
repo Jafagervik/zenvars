@@ -17,7 +17,7 @@ A zero-dependency module for parsing .env files into zig structs in under 150 li
 
 First to install, run:
 ```sh 
-zig fetch --save git+https://github.com/Jafagervik/zenvars#v1.1.0
+zig fetch --save git+https://github.com/Jafagervik/zenvars#v1.2.0
 ```
 Swap out version with any of the newer versions
 
